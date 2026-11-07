@@ -4,3 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+marlin = { version = "0.21.1", features = ["verilog"] }
+
+[dev-dependencies]
+snafu = "0.9.2"
