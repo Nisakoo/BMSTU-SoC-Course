@@ -3,10 +3,11 @@ use marlin::verilog::prelude::*;
 use soc::Main;
 
 #[test]
+#[snafu::report]
 fn forwards_u32max_correctly() -> Result<(), VerilatorError> {
     let runtime = VerilatorRuntime::new(
         "build".as_ref(),
-        &["src/main.sv".as_ref()],
+        &["rtl/main.v".as_ref()],
         &[],
         [],
         VerilatorRuntimeOptions::default(),
