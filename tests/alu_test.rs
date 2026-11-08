@@ -1,6 +1,8 @@
 use marlin::verilator::{VerilatorRuntime, VerilatorRuntimeOptions};
 use marlin::verilog::prelude::*;
-use soc::ALU;
+
+#[verilog(src = "rtl/alu.v", name = "alu")]
+struct ALU;
 
 // Коды операций, см. docs/ALU.md
 const ADD: u8 = 0b0000;
@@ -86,7 +88,14 @@ const SUB_CASES: &[Case] = &[
     // знаковое переполнение
     case("sub imin-1", SUB, IMIN, 1, IMAX, V),
     case("sub imin-imax", SUB, IMIN, IMAX, 1, V),
-    case("sub imax-max (imax - (-1))", SUB, IMAX, MAX, IMIN, N | C | V),
+    case(
+        "sub imax-max (imax - (-1))",
+        SUB,
+        IMAX,
+        MAX,
+        IMIN,
+        N | C | V,
+    ),
     case("sub 0-imin", SUB, 0, IMIN, IMIN, N | C | V),
     case("sub imax-imin", SUB, IMAX, IMIN, MAX, N | C | V),
 ];
@@ -122,12 +131,26 @@ const SHL_CASES: &[Case] = &[
     case("shl x<<8", SHL, 0x1234_5678, 8, 0x3456_7800, NONE),
     case("shl 0<<5", SHL, 0, 5, 0, Z),
     case("shl ignores b[31:5]", SHL, 1, 0x21, 2, NONE),
-    case("shl by 32 is shift by 0", SHL, 0x1234_5678, 32, 0x1234_5678, NONE),
+    case(
+        "shl by 32 is shift by 0",
+        SHL,
+        0x1234_5678,
+        32,
+        0x1234_5678,
+        NONE,
+    ),
 ];
 
 const SHR_CASES: &[Case] = &[
     case("shr imin>>31", SHR, IMIN, 31, 1, NONE),
-    case("shr imin>>1 (no sign fill)", SHR, IMIN, 1, 0x4000_0000, NONE),
+    case(
+        "shr imin>>1 (no sign fill)",
+        SHR,
+        IMIN,
+        1,
+        0x4000_0000,
+        NONE,
+    ),
     case("shr max>>4", SHR, MAX, 4, 0x0FFF_FFFF, NONE),
     case("shr max>>31", SHR, MAX, 31, 1, NONE),
     case("shr 1>>1", SHR, 1, 1, 0, Z),
