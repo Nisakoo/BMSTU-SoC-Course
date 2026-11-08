@@ -1,8 +1,10 @@
 .equ    arr_size, 10
+.equ    last_el, 9
 
         .data
 arr:    .word 1, 1, 2, 2, 2, 5, 5, 7, 8, 9
-res:    .org 16
+        .org 16
+res:    ; Ожидаю, что по умолчанию везде нули
         .text
 start:
     MOV R1, R0
@@ -10,7 +12,7 @@ start:
     STORE R2, res(R0)   ; Записываем первое число в результат, 16 + 0
 
 loop:
-    ADDI R1, 1
+    ADDI R1, R1, 1
     LOAD R3, arr(R1)
 
     CMP R2, R3
@@ -20,8 +22,8 @@ loop:
 
 skip:
     ; Запоминаем новое предыдущее число
-    LOAD R2, R3
+    MOV R2, R3
     ; Проверка, что еще не достигли конца массива
-    CMPI R1, arr_size-1
+    CMPI R1, last_el
     BNE loop
     HALT
