@@ -5,7 +5,10 @@ module ram #(
     input   [9:0]   addr,
     input           we,
     input   [31:0]  wd,
-    output  [31:0]  data
+    output  [31:0]  data,
+    // порт для просмотра: только чтение
+    input   [9:0]   raddr,
+    output  [31:0]  rdata
 );
     reg [31:0] mem [0:1023];
     integer i;
@@ -21,5 +24,6 @@ module ram #(
         if (we) mem[addr] <= wd;
     end
 
-    assign data = mem[addr];
+    assign data  = mem[addr];
+    assign rdata = mem[raddr];
 endmodule

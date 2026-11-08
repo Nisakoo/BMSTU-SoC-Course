@@ -68,6 +68,15 @@ macro_rules! read_word {
     }};
 }
 
+// Чтение слова через порт просмотра
+macro_rules! read_view {
+    ($m:expr, $addr:expr) => {{
+        $m.raddr = $addr;
+        $m.eval();
+        $m.rdata
+    }};
+}
+
 macro_rules! new_ram {
     ($runtime:ident, $m:ident) => {
         let $runtime = VerilatorRuntime::new(
@@ -283,6 +292,113 @@ fn write_over_preloaded_word_changes_only_it() -> Result<(), VerilatorError> {
     for addr in 0..RAM_SIZE {
         let expected = if addr == 0x002 { 0x1234_5678 } else { preloaded(addr) };
         assert_eq!(read_word!(m, addr), expected, "адрес {addr:#05x}");
+    }
+    Ok(())
+}
+
+// ---------- порт просмотра (только чтение) ----------
+
+#[test]
+#[snafu::report]
+fn view_port_reads_zero_at_start() -> Result<(), VerilatorError> {
+    new_ram!(runtime, m);
+    for addr in 0..RAM_SIZE {
+        assert_eq!(read_view!(m, addr), 0, "адрес {addr:#05x}");
+    }
+    Ok(())
+}
+
+#[test]
+#[snafu::report]
+fn view_port_sees_every_written_word() -> Result<(), VerilatorError> {
+    new_ram!(runtime, m);
+    for addr in 0..RAM_SIZE {
+        write_word!(m, addr, pattern(addr));
+    }
+    for addr in 0..RAM_SIZE {
+        assert_eq!(read_view!(m, addr), pattern(addr), "адрес {addr:#05x}");
+    }
+    Ok(())
+}
+
+#[test]
+#[snafu::report]
+fn view_port_shows_preloaded_data() -> Result<(), VerilatorError> {
+    new_ram_program!(runtime, m);
+    for addr in 0..RAM_SIZE {
+        assert_eq!(read_view!(m, addr), preloaded(addr), "адрес {addr:#05x}");
+    }
+    Ok(())
+}
+
+#[test]
+#[snafu::report]
+fn view_and_cpu_ports_have_independent_addresses() -> Result<(), VerilatorError> {
+    new_ram!(runtime, m);
+    for addr in [0u16, 1, 0x155, 0x2AA, 0x3FF] {
+        write_word!(m, addr, pattern(addr));
+    }
+    for (a, b) in [(0u16, 0x3FFu16), (0x155, 0x2AA), (0x2AA, 0x155), (1, 1), (0x3FF, 0)] {
+        m.addr = a;
+        m.raddr = b;
+        m.eval();
+        assert_eq!(m.data, pattern(a), "порт процессора, адрес {a:#05x}, порт просмотра {b:#05x}");
+        assert_eq!(m.rdata, pattern(b), "порт просмотра, адрес {b:#05x}, порт процессора {a:#05x}");
+    }
+    Ok(())
+}
+
+#[test]
+#[snafu::report]
+fn view_port_is_combinational() -> Result<(), VerilatorError> {
+    new_ram!(runtime, m);
+    write_word!(m, 1, 10);
+    write_word!(m, 2, 20);
+    // clk не меняется: меняем только адрес и вызываем eval
+    m.raddr = 1;
+    m.eval();
+    assert_eq!(m.rdata, 10);
+    m.raddr = 2;
+    m.eval();
+    assert_eq!(m.rdata, 20, "значение сменилось без такта");
+    Ok(())
+}
+
+#[test]
+#[snafu::report]
+fn view_port_sees_a_write_only_after_the_clock_edge() -> Result<(), VerilatorError> {
+    new_ram!(runtime, m);
+    write_word!(m, 4, 100); // после записи clk = 1
+    m.addr = 4;
+    m.raddr = 4;
+    m.wd = 200;
+    m.we = 1;
+    m.eval(); // фронта clk не было
+    assert_eq!(m.rdata, 100, "до фронта clk порт просмотра видит старое слово");
+    m.clk = 0;
+    m.eval();
+    assert_eq!(m.rdata, 100, "спад clk слово не меняет");
+    m.clk = 1;
+    m.eval();
+    assert_eq!(m.rdata, 200, "после фронта clk порт просмотра видит новое слово");
+    Ok(())
+}
+
+#[test]
+#[snafu::report]
+fn reading_through_the_view_port_does_not_change_the_ram() -> Result<(), VerilatorError> {
+    new_ram!(runtime, m);
+    for addr in 0..RAM_SIZE {
+        write_word!(m, addr, pattern(addr));
+    }
+    for _ in 0..3 {
+        for addr in 0..RAM_SIZE {
+            m.raddr = addr;
+            tick!(m);
+        }
+    }
+    for addr in 0..RAM_SIZE {
+        assert_eq!(read_word!(m, addr), pattern(addr), "адрес {addr:#05x}");
     }
     Ok(())
 }

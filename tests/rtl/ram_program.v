@@ -4,13 +4,17 @@ module ram_program(
     input  [9:0]  addr,
     input         we,
     input  [31:0] wd,
-    output [31:0] data
+    output [31:0] data,
+    input  [9:0]  raddr,
+    output [31:0] rdata
 );
     ram #(.INIT_FILE("tests/data/ram_test.hex")) u_ram (
-        .clk (clk),
-        .addr(addr),
-        .we  (we),
-        .wd  (wd),
-        .data(data)
+        .clk  (clk),
+        .addr (addr),
+        .we   (we),
+        .wd   (wd),
+        .data (data),
+        .raddr(raddr),
+        .rdata(rdata)
     );
 endmodule
