@@ -6,6 +6,8 @@ default-run = "soc"
 
 [dependencies]
 marlin = { version = "0.21.1", features = ["verilog"] }
+gpui = { version = "0.2.2", default-features = false, features = ["font-kit", "runtime_shaders"] }
 
 [dev-dependencies]
 snafu = "0.9.2"
+gpui = { version = "0.2.2", default-features = false, features = ["font-kit", "runtime_shaders", "test-support"] }
