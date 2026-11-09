@@ -2,6 +2,7 @@
 name = "soc"
 version = "0.1.0"
 edition = "2024"
+default-run = "soc"
 
 [dependencies]
 marlin = { version = "0.21.1", features = ["verilog"] }
